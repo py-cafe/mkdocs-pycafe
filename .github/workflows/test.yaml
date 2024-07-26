@@ -1,0 +1,330 @@
+name: Test
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - v*
+  pull_request:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 6 * * *'  # at 06:00 UTC every day
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ !(github.ref == 'refs/heads/main') }}
+
+
+defaults:
+  run:
+    shell: bash {0}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Install build tools
+        run: pip install hatch
+
+      - name: Build mkdocs-pycafe
+        run: hatch build
+
+      - name: Upload Test artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mkdocs-pycafe-builds-${{ github.run_number }}
+          path: |
+            dist
+            README.md
+
+  code-quality:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: [3.8, "3.9"]
+    env:
+      LOCK_FILE_LOCATION: .ci-package-locks/code-quality/python${{ matrix.python-version }}.txt
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Prepare
+        id: prepare
+        run: |
+          if [ -f ${{ env.LOCK_FILE_LOCATION }} ]; then
+            echo "LOCKS_EXIST=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "LOCKS_EXIST=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Install without locking versions
+        if: github.event_name == 'schedule' || steps.prepare.outputs.LOCKS_EXIST == 'false'
+        id: install_no_lock
+        run: |
+          mkdir -p .ci-package-locks/code-quality
+          pip install pre-commit
+          pip freeze --exclude mkdocs-pycafe > ${{ env.LOCK_FILE_LOCATION }}
+          git diff --quiet || echo "HAS_DIFF=true" >> "$GITHUB_OUTPUT"
+
+      - name: Install
+        if: github.event_name != 'schedule' && steps.prepare.outputs.LOCKS_EXIST == 'true'
+        run: pip install -r ${{ env.LOCK_FILE_LOCATION }}
+
+      - name: Install pre-commit
+        run: pre-commit install
+
+      - name: Run pre-commit
+        run: pre-commit run --all-files
+
+      - name: Upload CI package locks
+        if: steps.install_no_lock.outputs.HAS_DIFF == 'true' || steps.prepare.outputs.LOCKS_EXIST == 'false'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-package-locks-code-quality-python${{ matrix.python-version }}
+          path: ./**/${{ env.LOCK_FILE_LOCATION }}
+
+  test-install:
+    needs: [build]
+    runs-on: ${{ matrix.os }}-${{(matrix.os == 'ubuntu' && matrix.python == '3.6') && '20.04' || (matrix.os == 'macos' && matrix.python == '3.6') && '13' || 'latest' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu, macos, windows]
+        python: ["3.6", "3.12"]
+
+    steps:
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: mkdocs-pycafe-builds-${{ github.run_number }}
+
+      - name: Debug
+        run: ls -R dist
+
+      - name: Install mkdocs-pycafe-ui
+        run:
+          pip install dist/*.whl
+
+      - name: Test import
+        run: python -c "import mkdocs_pycafe"
+
+  integration-test:
+    needs: [build]
+    timeout-minutes: 15
+    runs-on: ${{ matrix.os }}-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # just ubuntu  give enough confidence
+        os: [ubuntu]
+        # just 1 version, it's heavy
+        python-version: [3.8]
+    env:
+      LOCK_FILE_LOCATION: .ci-package-locks/integration/os${{ matrix.os }}-python${{ matrix.python-version }}-ipywidgets${{ matrix.ipywidgets_major }}.txt
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: "pip"
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: mkdocs-pycafe-builds-${{ github.run_number }}
+
+      - name: Prepare
+        id: prepare
+        run: |
+          mkdir test-results
+          if [ -f ${{ env.LOCK_FILE_LOCATION }} ]; then
+            echo "LOCKS_EXIST=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "LOCKS_EXIST=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Install without locking versions
+        if: github.event_name == 'schedule' || steps.prepare.outputs.LOCKS_EXIST == 'false'
+        id: install_no_lock
+        run: |
+          mkdir -p .ci-package-locks/integration
+          pip install `echo dist/*.whl`[all]
+          pip freeze --exclude mkdocs-pycafe > ${{ env.LOCK_FILE_LOCATION }}
+          git diff --quiet || echo "HAS_DIFF=true" >> "$GITHUB_OUTPUT"
+
+      - name: Install
+        if: github.event_name != 'schedule' && steps.prepare.outputs.LOCKS_EXIST == 'true'
+        run: |
+          pip install -r ${{ env.LOCK_FILE_LOCATION }}
+          pip install `echo dist/*.whl`[all]
+
+      - name: Install playwright
+        run: playwright install
+
+      - name: test
+        if: github.event_name != 'schedule' || steps.install_no_lock.outputs.HAS_DIFF == 'true'
+        run: pytest tests/integration --timeout=360 --video=retain-on-failure --output=test-results -vv -s --log-cli-level=warning
+
+      - name: Upload Test artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-integration-os${{ matrix.os }}-python${{ matrix.python-version }}-ipywidgets${{ matrix.ipywidgets_major }}
+          path: test-results
+
+      - name: Upload CI package locks
+        if: steps.install_no_lock.outputs.HAS_DIFF == 'true' || steps.prepare.outputs.LOCKS_EXIST == 'false'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-package-locks-integration-os${{ matrix.os }}-python${{ matrix.python-version }}-ipywidgets${{ matrix.ipywidgets_major }}
+          path: ./**/${{ env.LOCK_FILE_LOCATION }}
+
+  unit-test:
+    needs: [build]
+    runs-on: ${{ matrix.os }}-${{(matrix.os == 'ubuntu' && matrix.python == '3.6') && '20.04' || (matrix.os == 'macos' && matrix.python == '3.6') && '13' || 'latest' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu, macos, windows]
+        python: [3.6, 3.12]
+    env:
+      LOCK_FILE_LOCATION: .ci-package-locks/unit/os${{ matrix.os }}-python${{ matrix.python }}-ipywidgets${{ matrix.ipywidgets }}.txt
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+          cache: "pip"
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: mkdocs-pycafe-builds-${{ github.run_number }}
+
+      - name: Prepare
+        id: prepare
+        run: |
+          if [ -f ${{ env.LOCK_FILE_LOCATION }} ]; then
+            echo "LOCKS_EXIST=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "LOCKS_EXIST=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Install without locking versions
+        id: install_no_lock
+        if: github.event_name == 'schedule' || steps.prepare.outputs.LOCKS_EXIST == 'false'
+        run: |
+          mkdir -p .ci-package-locks/unit
+          pip install `echo dist/*.whl`[all]
+          pip freeze --exclude mkdocs-pycafe  > ${{ env.LOCK_FILE_LOCATION }}
+          git diff --quiet || echo "HAS_DIFF=true" >> "$GITHUB_OUTPUT"
+
+      - name: Install
+        if: github.event_name != 'schedule' && steps.prepare.outputs.LOCKS_EXIST == 'true'
+        run: |
+          pip install -r ${{ env.LOCK_FILE_LOCATION }}
+          pip install `echo dist/*.whl`[all]
+
+      - name: test
+        if: github.event_name != 'schedule' || steps.install_no_lock.outputs.HAS_DIFF == 'true'
+        run: pytest tests/unit --doctest-modules --timeout=60
+
+      - name: Upload CI package locks
+        if: steps.install_no_lock.outputs.HAS_DIFF == 'true' || steps.prepare.outputs.LOCKS_EXIST == 'false'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-package-locks-unit-os${{ matrix.os }}-python${{ matrix.python }}-ipywidgets${{ matrix.ipywidgets }}
+          path: ./**/${{ env.LOCK_FILE_LOCATION }}
+
+  update-ci-package-locks:
+    needs: [build, code-quality, integration-test, unit-test]
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.head_ref || github.ref }}
+          repository: ${{ github.event.pull_request.head.repo.full_name || github.event.repository.full_name }}
+
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: ci-package-locks-*
+          merge-multiple: true
+
+      - name: Prepare
+        id: prepare
+        # We check if lock files have changed. This should only be the case if we are either running on a schedule
+        # or if some lock files did not exist yet.
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+
+          git add -N .ci-package-locks
+          git diff --quiet || echo "HAS_DIFF=true" >> "$GITHUB_OUTPUT"
+
+      - name: Update CI package locks
+        if: steps.prepare.outputs.HAS_DIFF == 'true'
+        run: |
+          git add .ci-package-locks
+          git commit -m "Update CI package locks"
+          git push
+
+  release:
+    needs: [build, code-quality, test-install, integration-test, unit-test]
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write  # this permission is mandatory for trusted publishing
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.12
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: mkdocs-pycafe-builds-${{ github.run_number }}
+
+      - name: Install build tools
+        run: pip install hatch
+
+      - name: Install mkdocs-pycafe
+        run: pip install dist/*.whl
+
+      - name: Test import mkdocs-pycafe
+        run: python -c "import mkdocs_pycafe"
+
+      - name: Publish package distributions to PyPI
+        if: startsWith(github.event.ref, 'refs/tags/v')
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: dist

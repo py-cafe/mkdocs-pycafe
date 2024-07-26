@@ -1,0 +1,22 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+        exclude: .bumpversion.cfg
+  - repo: https://github.com/codespell-project/codespell
+    rev: v2.2.6
+    hooks:
+      - id: codespell
+        files: ^.*\.(py|md|yaml|js|ts|ipynb)$
+        args: []
+        additional_dependencies:
+          - tomli
+  - repo: https://github.com/charliermarsh/ruff-pre-commit
+    rev: "v0.3.4"
+    hooks:
+      - id: ruff
+        stages: [commit]
+      - id: ruff-format
+        stages: [commit]
