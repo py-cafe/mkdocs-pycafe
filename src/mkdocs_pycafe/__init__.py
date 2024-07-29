@@ -9,7 +9,7 @@ base_url = "https://py.cafe"
 
 def validator(language, inputs, options, attrs, md):
     valid_flags = {"pycafe-link", "pycafe-embed"}
-    valid_inputs = {"requirements", "extra-requirements", "pycafe-type"}
+    valid_inputs = {"requirements", "extra-requirements", "pycafe-type", "pycafe-embed-scale"}
 
     for k, v in inputs.items():
         if k in valid_inputs:
@@ -33,6 +33,7 @@ def _formatter(src="", language="", class_name=None, options=None, md="", requir
     pycafe_embed_width = options.get("pycafe-embed-width", "100%")
     pycafe_embed_style = options.get("pycafe-embed-style", "border: 1px solid #e6e6e6; border-radius: 8px;")
     pycafe_embed_theme = options.get("pycafe-embed-theme", "light")
+    pycafe_embed_scale = float(options.get("pycafe-embed-scale", 1.0))
     pycafe_type = options.get("pycafe-type", pycafe_type)
     requirements = "\n".join(options.get("requirements", "").split(",")) or requirements
     extra_requirements = "\n".join(options.get("extra-requirements", "").split(","))
@@ -51,7 +52,22 @@ def _formatter(src="", language="", class_name=None, options=None, md="", requir
             url = pycafe_embed_url(code=src, requirements=requirements, app_type=pycafe_type, theme=pycafe_embed_theme)
             # e.g. <iframe src="https://py.cafe/embed?apptype=streamlit&theme=light&linkToApp=false#c=..."
             #           width="100%" height="400px" style="border: 1px solid #e6e6e6; border-radius: 8px;"></iframe>
-            el = el + f"""<iframe src="{url}" width="{pycafe_embed_width}" height="{pycafe_embed_height}" style="{pycafe_embed_style}"></iframe>"""
+            style = (
+                f"max-width: unset;"
+                f"width: calc({pycafe_embed_width}/{pycafe_embed_scale}); "
+                f"height: calc({pycafe_embed_height}/{pycafe_embed_scale}); "
+                f"transform-origin: top left; "
+                f"transform: scale({pycafe_embed_scale}); "
+                f"{pycafe_embed_style}"
+            )
+            el = (
+                el
+                + f"""
+            <div style="width: {pycafe_embed_width}; height: {pycafe_embed_height};">
+                <iframe src="{url}" style="{style}">
+                </iframe>
+            </div>"""
+            )
     except Exception as e:
         raise SuperFencesException from e
 

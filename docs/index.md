@@ -91,11 +91,11 @@ page = alt.JupyterChart(chart)
 
 ### Code block with an embedded app
 
-If want the app to be embedded, instead of providing a linl, you can use the pycafe-embed flag.
+If want the app to be embedded, instead of providing a link, you can use the pycafe-embed flag.
 
 ````
 
-```{.python pycafe-embed extra-requirements="vega_datasets" pycafe-embed-style="border: 1px solid #e6e6e6; border-radius: 8px;" pycafe-embed-width="100%" pycafe-embed-height="400px"}
+```{.python pycafe-embed extra-requirements="vega_datasets" pycafe-embed-style="border: 1px solid #e6e6e6; border-radius: 8px;" pycafe-embed-width="100%" pycafe-embed-height="400px" pycafe-embed-scale="1.0"}
 from vega_datasets import data
 import altair as alt
 
@@ -114,7 +114,7 @@ page = alt.JupyterChart(chart)
 
 Which will render as:
 
-```{.python pycafe-embed extra-requirements="vega_datasets" pycafe-embed-style="border: 1px solid #e6e6e6; border-radius: 8px;" pycafe-embed-width="100%" pycafe-embed-height="400px"}
+```{.python pycafe-embed extra-requirements="vega_datasets" pycafe-embed-style="border: 1px solid #e6e6e6; border-radius: 8px;" pycafe-embed-width="100%" pycafe-embed-height="400px" pycafe-embed-scale="1.0"}
 from vega_datasets import data
 import altair as alt
 
