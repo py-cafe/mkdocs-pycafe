@@ -1,5 +1,8 @@
 site_name: PyCafe plugin for MkDocs
 site_url: https://mkdocs.py.cafe
+repo_url: https://github.com/py-cafe/mkdocs-pycafe
+repo_name: mkdocs-pycafe
+edit_uri: edit/main/docs/
 theme:
   name: material
 markdown_extensions:
