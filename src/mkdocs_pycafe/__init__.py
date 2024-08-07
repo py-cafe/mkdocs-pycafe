@@ -45,7 +45,7 @@ def _formatter(src="", language="", class_name=None, options=None, md="", requir
     try:
         if pycafe_link:
             url = pycafe_edit_url(code=src, requirements=requirements, app_type=pycafe_type)
-            text = "Run and edit above code in py.cafe"
+            text = "Run and edit this code in Py.Cafe"
             target = "_blank"
             el = el + f"""<a href="{url}" class="PyCafe-button PyCafe-launch-button" target={target}>{text}</a>"""
         if pycafe_embed:
