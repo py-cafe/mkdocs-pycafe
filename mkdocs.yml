@@ -19,5 +19,7 @@ markdown_extensions:
               requirements: |
                 altair
                 anywidget
+              link_text: |
+                <img src="https://py.cafe/logos/pycafe_logo.png" style="height: 24px"> **Run and edit this code in Py.Cafe**
   - pymdownx.snippets:
       url_download: true

@@ -5,12 +5,15 @@ import warnings
 from functools import partial
 from urllib.parse import quote_plus, urlencode
 
+from markdown import Markdown
+
 base_url = "https://py.cafe"
+default_link_text = """<img src="https://py.cafe/logos/pycafe_logo.png" style="height: 24px"> **Run and edit this code in Py.Cafe**"""
 
 
 def validator(language, inputs, options, attrs, md):
     valid_flags = {"pycafe-link", "pycafe-embed"}
-    valid_inputs = {"requirements", "extra-requirements", "pycafe-type", "pycafe-embed-scale"}
+    valid_inputs = {"requirements", "extra-requirements", "pycafe-type", "pycafe-embed-scale", "pycafe-link-text"}
 
     for k, v in inputs.items():
         if k in valid_inputs:
@@ -24,7 +27,7 @@ def validator(language, inputs, options, attrs, md):
     return True
 
 
-def _formatter(src="", language="", class_name=None, options=None, md="", requirements="", pycafe_type="solara", **kwargs):
+def _formatter(src="", language="", class_name=None, options=None, md="", requirements="", link_text="", pycafe_type="solara", **kwargs):
     from pymdownx.superfences import SuperFencesException
 
     options = options or {}
@@ -34,6 +37,7 @@ def _formatter(src="", language="", class_name=None, options=None, md="", requir
     pycafe_embed_width = options.get("pycafe-embed-width", "100%")
     pycafe_embed_style = options.get("pycafe-embed-style", "border: 1px solid #e6e6e6; border-radius: 8px;")
     pycafe_embed_theme = options.get("pycafe-embed-theme", "light")
+    pycafe_link_text = options.get("pycafe-link-text", link_text)
     pycafe_embed_scale = float(options.get("pycafe-embed-scale", 1.0))
     pycafe_type = options.get("pycafe-type", pycafe_type)
     requirements = "\n".join(options.get("requirements", "").split(",")) or requirements
@@ -46,9 +50,10 @@ def _formatter(src="", language="", class_name=None, options=None, md="", requir
     try:
         if pycafe_link:
             url = pycafe_edit_url(code=src, requirements=requirements, app_type=pycafe_type)
-            text = "Run and edit above code in py.cafe"
+            md_renderer = Markdown(extensions=md.registeredExtensions)
+            pycafe_link_text_html = md_renderer.convert(pycafe_link_text)
             target = "_blank"
-            link = f"""<a href="{url}" class="PyCafe-button PyCafe-launch-button" target={target}>{text}</a>"""
+            link = f"""<a href="{url}" class="PyCafe-button PyCafe-launch-button" target={target}>{pycafe_link_text_html}</a>"""
             el = el.rstrip()
             if el.endswith("</div>"):
                 el = el[: -len("</div>")] + link + "</div>"
@@ -107,6 +112,6 @@ def pycafe_embed_url(*, code: str, requirements, app_type, theme="light"):
     return f"{base_url}/embed?apptype={app_type}&theme={theme}&linkToApp=false#{query}"
 
 
-def formatter(requirements="", type="solara"):  # noqa: A002
+def formatter(requirements="", type="solara", link_text=default_link_text):  # noqa: A002
     """Create a formatter with default requirements and type."""
-    return partial(_formatter, pycafe_type=type, requirements=requirements)
+    return partial(_formatter, pycafe_type=type, requirements=requirements, link_text=link_text)
