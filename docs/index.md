@@ -37,6 +37,8 @@ markdown_extensions:
               requirements: |
                 altair
                 anywidget
+              link_text: |
+                <img src="https://py.cafe/logos/pycafe_logo.png" style="height: 24px"> **Run and edit this code in Py.Cafe**
   - pymdownx.snippets:
       url_download: true
 ```
@@ -88,6 +90,13 @@ chart = alt.Chart(cars).mark_circle().encode(
 page = alt.JupyterChart(chart)
 ```
 
+The default link text (in markdown format) can be changed in `mkdocs.yml` by changing the `link_text` option in the `format` object, or by adding the `pycafe-link-text` attribute to the code block.
+
+````
+```{.python pycafe-link pycafe-link-text="My custom link text"}
+...
+```
+````
 
 ### Code block with an embedded app
 
