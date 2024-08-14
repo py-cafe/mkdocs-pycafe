@@ -50,7 +50,9 @@ def _formatter(src="", language="", class_name=None, options=None, md="", requir
     try:
         if pycafe_link:
             url = pycafe_edit_url(code=src, requirements=requirements, app_type=pycafe_type)
-            md_renderer = Markdown(extensions=md.registeredExtensions)
+            # Ideally, we use Markdown(extensions=md.registeredExtensions)
+            # but that seems to break hl_lines in code blocks
+            md_renderer = Markdown()
             pycafe_link_text_html = md_renderer.convert(pycafe_link_text)
             target = "_blank"
             link = f"""<a href="{url}" class="PyCafe-button PyCafe-launch-button" target={target}>{pycafe_link_text_html}</a>"""
