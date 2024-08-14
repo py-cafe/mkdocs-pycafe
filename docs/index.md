@@ -130,6 +130,7 @@ chart = alt.Chart(cars).mark_circle().encode(
 page = alt.JupyterChart(chart)
 ```
 
+1.  Code annotations should still work.
 
 ### Code block with an embedded app
 
