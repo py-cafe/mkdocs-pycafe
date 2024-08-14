@@ -5,6 +5,8 @@ repo_name: mkdocs-pycafe
 edit_uri: edit/main/docs/
 theme:
   name: material
+  features:
+    - content.code.annotate #
 markdown_extensions:
   - pymdownx.superfences:
       custom_fences:
