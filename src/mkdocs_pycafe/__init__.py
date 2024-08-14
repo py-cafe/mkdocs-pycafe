@@ -1,6 +1,7 @@
 import base64
 import gzip
 import json
+import warnings
 from functools import partial
 from urllib.parse import quote_plus, urlencode
 
@@ -47,7 +48,17 @@ def _formatter(src="", language="", class_name=None, options=None, md="", requir
             url = pycafe_edit_url(code=src, requirements=requirements, app_type=pycafe_type)
             text = "Run and edit above code in py.cafe"
             target = "_blank"
-            el = el + f"""<a href="{url}" class="PyCafe-button PyCafe-launch-button" target={target}>{text}</a>"""
+            link = f"""<a href="{url}" class="PyCafe-button PyCafe-launch-button" target={target}>{text}</a>"""
+            el = el.rstrip()
+            if el.endswith("</div>"):
+                el = el[: -len("</div>")] + link + "</div>"
+            else:
+                warnings.warn(
+                    f"pycafe-link cannot be inserted in the code block div: {el}\nThis might break annotations, please open an issue.",
+                    UserWarning,
+                    stacklevel=1,
+                )
+                el = el + link
         if pycafe_embed:
             url = pycafe_embed_url(code=src, requirements=requirements, app_type=pycafe_type, theme=pycafe_embed_theme)
             # e.g. <iframe src="https://py.cafe/embed?apptype=streamlit&theme=light&linkToApp=false#c=..."

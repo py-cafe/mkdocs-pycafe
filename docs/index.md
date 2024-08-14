@@ -82,6 +82,48 @@ chart = alt.Chart(cars).mark_circle().encode(
     x='Horsepower',
     y='Miles_per_Gallon',
     color='Origin',
+
+# assign a widget to page so solara knows what to render
+page = alt.JupyterChart(chart)
+```
+
+### Existing code block features
+
+Existing features such as [annotations](https://squidfunk.github.io/mkdocs-material/reference/annotations/) and [line highlighting](https://squidfunk.github.io/mkdocs-material/reference/code-blocks/#highlighting-specific-lines) should still work.
+
+````
+```{.python pycafe-link extra-requirements="vega_datasets" hl_lines="7-9"}
+from vega_datasets import data
+import altair as alt
+
+cars = data.cars()  # (1)
+
+chart = alt.Chart(cars).mark_circle().encode(
+    x='Horsepower',
+    y='Miles_per_Gallon',
+    color='Origin',
+)
+
+# assign a widget to page so solara knows what to render
+page = alt.JupyterChart(chart)
+```
+
+1.  Code annotations should still work.
+
+````
+
+Should render as:
+
+```{.python pycafe-link  hl_lines="7-9" extra-requirements="vega_datasets"}
+from vega_datasets import data
+import altair as alt
+
+cars = data.cars()  # (1)
+
+chart = alt.Chart(cars).mark_circle().encode(
+    x='Horsepower',
+    y='Miles_per_Gallon',
+    color='Origin',
 )
 
 # assign a widget to page so solara knows what to render
