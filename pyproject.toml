@@ -25,7 +25,9 @@ classifiers = [
   "Programming Language :: Python :: Implementation :: CPython",
   "Programming Language :: Python :: Implementation :: PyPy",
 ]
-dependencies = []
+dependencies = [
+  "markdown"
+]
 
 [project.urls]
 Documentation = "https://github.com/py-cafe/mkdocs-pycafe#readme"
