@@ -32,7 +32,7 @@ dependencies = [
 [project.urls]
 Documentation = "https://github.com/py-cafe/mkdocs-pycafe#readme"
 Issues = "https://github.com/py-cafe/mkdocs-pycafe/issues"
-Source = "hhttps://github.com/py-cafe/mkdocs-pycafe"
+Source = "https://github.com/py-cafe/mkdocs-pycafe"
 
 [tool.hatch.version]
 path = "src/mkdocs_pycafe/__about__.py"
