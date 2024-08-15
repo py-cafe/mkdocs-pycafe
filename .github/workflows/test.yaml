@@ -172,7 +172,7 @@ jobs:
         id: install_no_lock
         run: |
           mkdir -p .ci-package-locks/integration
-          pip install `echo dist/*.whl`[all]
+          pip install `echo dist/*.whl`[all,integration]
           pip freeze --exclude mkdocs-pycafe > ${{ env.LOCK_FILE_LOCATION }}
           git diff --quiet || echo "HAS_DIFF=true" >> "$GITHUB_OUTPUT"
 
@@ -180,14 +180,19 @@ jobs:
         if: github.event_name != 'schedule' && steps.prepare.outputs.LOCKS_EXIST == 'true'
         run: |
           pip install -r ${{ env.LOCK_FILE_LOCATION }}
-          pip install `echo dist/*.whl`[all]
+          pip install `echo dist/*.whl`[all,integration]
 
       - name: Install playwright
         run: playwright install
 
+      - name: Run mkdocs
+        run: |
+          mkdocs serve&
+          sleep 1
+
       - name: test
         if: github.event_name != 'schedule' || steps.install_no_lock.outputs.HAS_DIFF == 'true'
-        run: pytest tests/integration --timeout=360 --video=retain-on-failure --output=test-results -vv -s --log-cli-level=warning
+        run: pytest tests/integration --video=retain-on-failure --output=test-results -vv -s --log-cli-level=warning
 
       - name: Upload Test artifacts
         if: always()
