@@ -191,6 +191,14 @@ chart = alt.Chart(cars).mark_circle().encode(
 page = alt.JupyterChart(chart)
 ```
 
+The embedding happens with an iframe, if the iframe needs extra permissions, you can specify them with the `pycafe-iframe-allow` attribute.
+
+````
+```{.python pycafe-embed pycafe-iframe-allow="clipboard-write; clipboard-read"}
+...
+```
+````
+
 
 ### Code block with code from PyCafe
 

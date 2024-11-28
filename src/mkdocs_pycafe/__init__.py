@@ -20,6 +20,7 @@ def validator(language, inputs, options, attrs, md):
         "pycafe-embed-theme",
         "pycafe-link-text",
         "pycafe-embed-scale",
+        "pycafe-iframe-allow",
         "pycafe-type",
         "requirements",
         "extra-requirements",
@@ -49,6 +50,7 @@ def _formatter(src="", language="", class_name=None, options=None, md="", requir
     pycafe_embed_theme = options.get("pycafe-embed-theme", "light")
     pycafe_link_text = options.get("pycafe-link-text", link_text)
     pycafe_embed_scale = float(options.get("pycafe-embed-scale", 1.0))
+    pycafe_iframe_allow = options.get("pycafe-iframe-allow", "")
     pycafe_type = options.get("pycafe-type", pycafe_type)
     requirements = "\n".join(options.get("requirements", "").split(",")) or requirements
     extra_requirements = "\n".join(options.get("extra-requirements", "").split(","))
@@ -92,7 +94,7 @@ def _formatter(src="", language="", class_name=None, options=None, md="", requir
                 el
                 + f"""
             <div style="width: {pycafe_embed_width}; height: {pycafe_embed_height};">
-                <iframe src="{url}" style="{style}">
+                <iframe src="{url}" style="{style}" allow="{pycafe_iframe_allow}">
                 </iframe>
             </div>"""
             )
