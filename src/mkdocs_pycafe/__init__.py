@@ -13,7 +13,17 @@ default_link_text = """<img src="https://py.cafe/logos/pycafe_logo.png" style="h
 
 def validator(language, inputs, options, attrs, md):
     valid_flags = {"pycafe-link", "pycafe-embed"}
-    valid_inputs = {"requirements", "extra-requirements", "pycafe-type", "pycafe-embed-scale", "pycafe-link-text"}
+    valid_inputs = {
+        "pycafe-embed-height",
+        "pycafe-embed-width",
+        "pycafe-embed-style",
+        "pycafe-embed-theme",
+        "pycafe-link-text",
+        "pycafe-embed-scale",
+        "pycafe-type",
+        "requirements",
+        "extra-requirements",
+    }
 
     for k, v in inputs.items():
         if k in valid_inputs:
