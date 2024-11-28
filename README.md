@@ -5,10 +5,9 @@
 
 -----
 
-**Table of Contents**
+## Documentation
 
-- [Installation](#installation)
-- [License](#license)
+Documentation is available at [mkdocs.py.cafe](https://mkdocs.py.cafe).
 
 ## Installation
 
