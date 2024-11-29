@@ -39,7 +39,19 @@ def validator(language, inputs, options, attrs, md):
     return True
 
 
-def _formatter(src="", language="", class_name=None, options=None, md="", requirements="", link_text="", pycafe_type="solara", next_formatter=None, **kwargs):
+def _formatter(
+    src="",
+    language="",
+    class_name=None,
+    options=None,
+    md="",
+    requirements="",
+    link_text="",
+    pycafe_type="solara",
+    next_formatter=None,
+    inside_last_div=True,
+    **kwargs,
+):
     from pymdownx.superfences import SuperFencesException
 
     options = options or {}
@@ -70,14 +82,15 @@ def _formatter(src="", language="", class_name=None, options=None, md="", requir
             target = "_blank"
             link = f"""<a href="{url}" class="PyCafe-button PyCafe-launch-button" target={target}>{pycafe_link_text_html}</a>"""
             el = el.rstrip()
-            if el.endswith("</div>"):
+            if el.endswith("</div>") and inside_last_div:
                 el = el[: -len("</div>")] + link + "</div>"
             else:
-                warnings.warn(
-                    f"pycafe-link cannot be inserted in the code block div: {el}\nThis might break annotations, please open an issue.",
-                    UserWarning,
-                    stacklevel=1,
-                )
+                if inside_last_div:
+                    warnings.warn(
+                        f"pycafe-link cannot be inserted in the code block div: {el}\nThis might break annotations, please open an issue.",
+                        UserWarning,
+                        stacklevel=1,
+                    )
                 el = el + link
         if pycafe_embed:
             url = pycafe_embed_url(code=src, requirements=requirements, app_type=pycafe_type, theme=pycafe_embed_theme)
@@ -127,6 +140,6 @@ def pycafe_embed_url(*, code: str, requirements, app_type, theme="light"):
     return f"{base_url}/embed?apptype={app_type}&theme={theme}&linkToApp=false#{query}"
 
 
-def formatter(requirements="", type="solara", link_text=default_link_text, next_formatter=None, *args, **kwargs):  # noqa: A002
+def formatter(requirements="", type="solara", link_text=default_link_text, next_formatter=None, inside_last_div=True, *args, **kwargs):  # noqa: A002, ARG001
     """Create a formatter with default requirements and type."""
-    return partial(_formatter, pycafe_type=type, requirements=requirements, link_text=link_text, next_formatter=next_formatter)
+    return partial(_formatter, pycafe_type=type, requirements=requirements, link_text=link_text, next_formatter=next_formatter, inside_last_div=inside_last_div)
