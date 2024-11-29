@@ -34,11 +34,12 @@ def validator(language, inputs, options, attrs, md):
             options[k] = True
             continue
         attrs[k] = v
+
     md.preprocessors["fenced_code_block"].extension.superfences[0]["validator"](language, inputs, options, attrs, md)
     return True
 
 
-def _formatter(src="", language="", class_name=None, options=None, md="", requirements="", link_text="", pycafe_type="solara", **kwargs):
+def _formatter(src="", language="", class_name=None, options=None, md="", requirements="", link_text="", pycafe_type="solara", next_formatter=None, **kwargs):
     from pymdownx.superfences import SuperFencesException
 
     options = options or {}
@@ -56,7 +57,7 @@ def _formatter(src="", language="", class_name=None, options=None, md="", requir
     extra_requirements = "\n".join(options.get("extra-requirements", "").split(","))
     requirements = requirements.rstrip() + "\n" + extra_requirements
 
-    el = md.preprocessors["fenced_code_block"].extension.superfences[0]["formatter"](
+    el = (next_formatter or md.preprocessors["fenced_code_block"].extension.superfences[0]["formatter"])(
         src=src, class_name=class_name, language=language, md=md, options=options, **kwargs
     )
     try:
@@ -126,6 +127,6 @@ def pycafe_embed_url(*, code: str, requirements, app_type, theme="light"):
     return f"{base_url}/embed?apptype={app_type}&theme={theme}&linkToApp=false#{query}"
 
 
-def formatter(requirements="", type="solara", link_text=default_link_text):  # noqa: A002
+def formatter(requirements="", type="solara", link_text=default_link_text, next_formatter=None, *args, **kwargs):  # noqa: A002
     """Create a formatter with default requirements and type."""
-    return partial(_formatter, pycafe_type=type, requirements=requirements, link_text=link_text)
+    return partial(_formatter, pycafe_type=type, requirements=requirements, link_text=link_text, next_formatter=next_formatter)
